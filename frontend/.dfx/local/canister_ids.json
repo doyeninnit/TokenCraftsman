@@ -1,8 +1,11 @@
 {
   "__Candid_UI": {
-    "local": "dfdal-2uaaa-aaaaa-qaama-cai"
+    "local": "be2us-64aaa-aaaaa-qaabq-cai"
   },
   "app": {
-    "local": "cinef-v4aaa-aaaaa-qaalq-cai"
+    "local": "bkyz2-fmaaa-aaaaa-qaaaq-cai"
+  },
+  "internet_identity": {
+    "local": "bd3sg-teaaa-aaaaa-qaaba-cai"
   }
 }
