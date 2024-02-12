@@ -4,7 +4,9 @@
 import React, { useState, useEffect } from 'react';
 import { AuthClient } from "@dfinity/auth-client";
 import { initializeContract } from './icp';
-import { getAllTokens } from './craftsman';
+import { getAllTokens, addOrUpdateToken } from './craftsman';
+import { Principal } from "@dfinity/principal";
+
 const IDENTITY_PROVIDER = `http://bd3sg-teaaa-aaaaa-qaaba-cai.localhost:4943/#authorize`;
 
 export default function CreateToken() {
@@ -78,31 +80,64 @@ export default function CreateToken() {
     }));
   };
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   if (!isAuthenticated) {
+  //     alert("Please log in to create a token.");
+  //     return;
+  //   }
+
+  //   const submitUrl = 'http://localhost:8000/setupICRC1Ledger';
+  //   try {
+  //     const response = await fetch(submitUrl, {
+  //       method: 'POST',
+  //       headers: { 'Content-Type': 'application/json' },
+  //       body: JSON.stringify(formData),
+  //     });
+
+  //     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+  //     const result = await response.json();
+  //     console.log(result);
+  //     alert('Token created successfully!');
+  //   } catch (error) {
+  //     console.error('Failed to create token:', error);
+  //     alert('Failed to create token. Please try again.');
+  //   }
+  // };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isAuthenticated) {
-      alert("Please log in to create a token.");
-      return;
+        alert("Please log in to create a token.");
+        return;
     }
 
+    // Assuming 'submitUrl' is where your backend API for token creation is located
     const submitUrl = 'http://localhost:8000/setupICRC1Ledger';
     try {
-      const response = await fetch(submitUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
+        const response = await fetch(submitUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData),
+        });
 
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-      const result = await response.json();
-      console.log(result);
-      alert('Token created successfully!');
+        // After successful token creation in your backend, call addOrUpdateToken
+        // Assuming 'userPrincipal' contains the principal ID of the logged-in user
+        // and 'formData' contains the token details to be updated
+        const thePrincipal = Principal.from(userPrincipal);
+
+        const updateResponse = await addOrUpdateToken(thePrincipal, formData);
+        console.log(updateResponse); // Log the response from addOrUpdateToken
+        alert('Token created and updated successfully!');
     } catch (error) {
-      console.error('Failed to create token:', error);
-      alert('Failed to create token. Please try again.');
+        console.error('Failed to create or update token:', error);
+        alert('Failed to create or update token. Please try again.');
     }
-  };
+};
+
 
 
   const copyToClipboard = (text) => {
