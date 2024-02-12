@@ -3,8 +3,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { AuthClient } from "@dfinity/auth-client";
-
-const IDENTITY_PROVIDER = `http://127.0.0.1:4943/?canisterId=bd3sg-teaaa-aaaaa-qaaba-cai#authorize`;
+import { initializeContract } from './icp';
+import { getAllTokens } from './craftsman';
+const IDENTITY_PROVIDER = `http://bd3sg-teaaa-aaaaa-qaaba-cai.localhost:4943/#authorize`;
 
 export default function CreateToken() {
   const [formData, setFormData] = useState({
@@ -18,35 +19,71 @@ export default function CreateToken() {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [userPrincipal, setUserPrincipal] = useState('');
 
-  useEffect(() => {
+  useEffect(async () => {
     const checkAuthentication = async () => {
-      const authClient = await AuthClient.create();
-      setIsAuthenticated(authClient.isAuthenticated());
-      if (authClient.isAuthenticated()) {
-        const identity = authClient.getIdentity();
-        const principal = identity.getPrincipal().toString();
+      // const authClient = await AuthClient.create();
+      const authClient = window.auth.client;
+
+      setIsAuthenticated(window.auth.isAuthenticated);
+      if (window.auth.isAuthenticated) {
+        const identity =  window.auth.identity;
+        console.log(`identity is: ${identity}`)
+        // const principal = identity.getPrincipal().toString();
+        const principal =  window.auth.principalText;
+
         setUserPrincipal(principal);
         console.log("Authenticated Principal:", principal); // Log the full principal
       }
     };
-
+    await initializeContract()
     checkAuthentication();
+    const principal = window.auth.principalText;
+console.log(`principal is ${principal}`)
+// const toks = getAllTokens()
+// console.log(`tokens created: ${toks}`)
+await fetchTokensAndLog()
   }, []);
 
-  const login = async () => {
-    const authClient = await AuthClient.create();
-    authClient.login({
-      identityProvider: IDENTITY_PROVIDER,
-      onSuccess: async () => {
-        setIsAuthenticated(true);
-        const identity = authClient.getIdentity();
-        const principal = identity.getPrincipal().toString();
-        setUserPrincipal(principal);
-        console.log("Authenticated Principal:", principal); // Log the full principal on successful login
-        window.location.reload();
-      },
-    });
+  const fetchTokensAndLog = async () => {
+    try {
+      const toks = await getAllTokens(); // Ensure getAllTokens is awaited
+      console.log(`tokens created: ${JSON.stringify(toks, null, 2)}`); // Properly log the resolved tokens
+    } catch (err) {
+      console.error("Failed to fetch tokens:", err);
+    }
   };
+  // const login = async () => {
+  //   const authClient = await AuthClient.create();
+  //   authClient.login({
+  //     identityProvider: IDENTITY_PROVIDER,
+  //     onSuccess: async () => {
+  //       setIsAuthenticated(true);
+  //       const identity = authClient.getIdentity();
+  //       const principal = identity.getPrincipal().toString();
+  //       setUserPrincipal(principal);
+  //       console.log("Authenticated Principal:", principal); // Log the full principal on successful login
+  //       window.location.reload();
+  //     },
+  //   });
+  // };
+  const MAX_TTL = 7 * 24 * 60 * 60 * 1000 * 1000 * 1000;
+
+  const login = async () => {
+    const authClient = window.auth.client;
+
+    const isAuthenticated = await authClient.isAuthenticated();
+
+    if (!isAuthenticated) {
+        await authClient?.login({
+            identityProvider: IDENTITY_PROVIDER,
+            onSuccess: async () => {
+                window.auth.isAuthenticated = await authClient.isAuthenticated();
+                window.location.reload();
+            },
+            maxTimeToLive: MAX_TTL,
+        });
+    }
+}
 
   const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
