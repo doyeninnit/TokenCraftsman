@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthClient } from "@dfinity/auth-client";
 import { initializeContract } from './icp';
-import { getAllTokens, addOrUpdateToken } from './craftsman';
+import { getAllTokens, addOrUpdateToken, getUserProfile} from './craftsman';
 import { Principal } from "@dfinity/principal";
 
 const IDENTITY_PROVIDER = `http://bd3sg-teaaa-aaaaa-qaaba-cai.localhost:4943/#authorize`;
@@ -41,7 +41,11 @@ export default function CreateToken() {
     console.log(`principal is ${principal}`)
     // const toks = getAllTokens()
     // console.log(`tokens created: ${toks}`)
-    await fetchTokensAndLog()
+    const thePrincipal = Principal.from(principal);
+
+    // await fetchTokensAndLog()
+    const prof = await getUserProfile(thePrincipal)
+    console.log(`profile is: ${prof}`)
   }, []);
 
   const fetchTokensAndLog = async () => {

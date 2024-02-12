@@ -10,7 +10,6 @@ export async function addOrUpdateToken(principal, token) {
     }
 }
 
-//after the token creation process is successfull, for now it will take the object used to create the token and feed it to the cnaister
 
 // Retrieve a user's profile and their tokens
 export async function getUserProfile(principal) {
