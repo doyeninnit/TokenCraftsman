@@ -1,10 +1,10 @@
 
 "use client";
-
+import Link from 'next/link';
 import React, { useState, useEffect } from 'react';
 import { AuthClient } from "@dfinity/auth-client";
 import { initializeContract } from './icp';
-import { getAllTokens, addOrUpdateToken, getUserProfile} from './craftsman';
+import { getAllTokens, addOrUpdateToken, getUserProfile } from './craftsman';
 import { Principal } from "@dfinity/principal";
 
 const IDENTITY_PROVIDER = `http://bd3sg-teaaa-aaaaa-qaaba-cai.localhost:4943/#authorize`;
@@ -20,7 +20,11 @@ export default function CreateToken() {
   });
   const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [userPrincipal, setUserPrincipal] = useState('');
+  const [userProfile, setUserProfile] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  
   useEffect(async () => {
     const checkAuthentication = async () => {
       const authClient = window.auth.client;
@@ -35,17 +39,33 @@ export default function CreateToken() {
         console.log("Authenticated Principal:", principal); // Log the full principal
       }
     };
+
+    const fetchUserProfile = async () => {
+      if (window.auth.isAuthenticated) {
+        const principal = Principal.fromText(window.auth.principalText);
+        try {
+          const profile = await getUserProfile(principal);
+          setUserProfile(profile); // Assuming profile structure matches your needs
+        } catch (error) {
+          console.error("Error fetching user profile:", error);
+        }
+      }
+    };
+  
     await initializeContract()
-    checkAuthentication();
+    await checkAuthentication();
+    await fetchUserProfile();
+
     const principal = window.auth.principalText;
     console.log(`principal is ${principal}`)
-    // const toks = getAllTokens()
-    // console.log(`tokens created: ${toks}`)
+
     const thePrincipal = Principal.from(principal);
 
     // await fetchTokensAndLog()
     const prof = await getUserProfile(thePrincipal)
-    console.log(`profile is: ${prof}`)
+    console.log(`Profile:`, JSON.stringify(prof, null, 2)); // Pretty print the object
+
+
   }, []);
 
   const fetchTokensAndLog = async () => {
@@ -84,63 +104,34 @@ export default function CreateToken() {
     }));
   };
 
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   if (!isAuthenticated) {
-  //     alert("Please log in to create a token.");
-  //     return;
-  //   }
-
-  //   const submitUrl = 'http://localhost:8000/setupICRC1Ledger';
-  //   try {
-  //     const response = await fetch(submitUrl, {
-  //       method: 'POST',
-  //       headers: { 'Content-Type': 'application/json' },
-  //       body: JSON.stringify(formData),
-  //     });
-
-  //     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-  //     const result = await response.json();
-  //     console.log(result);
-  //     alert('Token created successfully!');
-  //   } catch (error) {
-  //     console.error('Failed to create token:', error);
-  //     alert('Failed to create token. Please try again.');
-  //   }
-  // };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isAuthenticated) {
-        alert("Please log in to create a token.");
-        return;
+      alert("Please log in to create a token.");
+      return;
     }
 
-    // Assuming 'submitUrl' is where your backend API for token creation is located
     const submitUrl = 'http://localhost:8000/setupICRC1Ledger';
     try {
-        const response = await fetch(submitUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData),
-        });
+      const response = await fetch(submitUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
 
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-        // After successful token creation in your backend, call addOrUpdateToken
-        // Assuming 'userPrincipal' contains the principal ID of the logged-in user
-        // and 'formData' contains the token details to be updated
-        const thePrincipal = Principal.from(userPrincipal);
+      const thePrincipal = Principal.from(userPrincipal);
 
-        const updateResponse = await addOrUpdateToken(thePrincipal, formData);
-        console.log(updateResponse); // Log the response from addOrUpdateToken
-        alert('Token created and updated successfully!');
+      const updateResponse = await addOrUpdateToken(thePrincipal, formData);
+      console.log(updateResponse); // Log the response from addOrUpdateToken
+      alert('Token created and updated successfully!');
     } catch (error) {
-        console.error('Failed to create or update token:', error);
-        alert('Failed to create or update token. Please try again.');
+      console.error('Failed to create or update token:', error);
+      alert('Failed to create or update token. Please try again.');
     }
-};
+  };
 
 
 
@@ -181,6 +172,7 @@ export default function CreateToken() {
             Copy
           </button>
         </div>
+        
       )}
       {/* Form rendering logic remains the same */}
       <form onSubmit={handleSubmit} className="space-y-6 bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
@@ -216,6 +208,44 @@ export default function CreateToken() {
           </button>
         </div>
       </form>
+      {userProfile && (
+  <UserProfileSection userProfile={userProfile} />
+)}
     </div>
   );
 }
+
+
+
+const UserProfileSection = ({ userProfile }) => {
+  // Parse userProfile if it's a string to an object
+  const profileData = typeof userProfile === 'string' ? JSON.parse(userProfile) : userProfile;
+  
+  // Since the profileData appears to be an array, take the first item for simplicity
+  const profile = profileData.length ? profileData[0] : null;
+
+  return (
+    <div className="mt-8 p-4 border rounded-lg shadow">
+      <h3 className="text-lg font-semibold mb-4">User Profile</h3>
+      {profile ? (
+        <>
+          <p><strong>Principal:</strong> {profile.principal.__principal__}</p>
+          <h4 className="font-medium mt-4 mb-2">Tokens:</h4>
+          <ul>
+            {profile.tokens.map((token, index) => (
+              <li key={index} className="mb-2">
+                <p>Token Name: {token.tokenName}</p>
+                <p>Token Symbol: {token.tokenSymbol}</p>
+                <p>Pre-Minted Tokens: {token.preMintedTokens}</p>
+                <p>Transfer Fee: {token.transferFee}</p>
+                <p>Feature Flags: {token.featureFlags ? 'Enabled' : 'Disabled'}</p>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <p>No profile data available.</p>
+      )}
+    </div>
+  );
+};
