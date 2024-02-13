@@ -39,9 +39,12 @@ git clone https://github.com/doyeninnit/TokenCraftsman.git
    ```
 ### 2. Start the Local Internet Computer Replica
 
-1. Navigate to the root directory of the cloned repository:
+1. Navigate to the root directory of the cloned repository and switch to the assets branch:
    ```sh
    cd TokenCraftsman
+   ```
+    ```sh
+   git switch asset
    ```
 2. Run the following command to start a local Internet Computer replica in the background:
    ```sh
